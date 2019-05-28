@@ -1,1 +1,1 @@
-# wsuwp-code-libirary
+# wsuwp-code-library
