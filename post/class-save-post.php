@@ -65,9 +65,9 @@ class Save_Post {
 	 * Set up the Save_Post class.
 	 * @since 0.0.1
 	 *
-	 * @param false | array  $options        Save options with the structure of $save_options_array
-	 * @param false | string $nonce_action  Action to verify when saving the post.
-	 * @param false | string $nonce_name     Nonce name to verify.
+	 * @param false|array  $options        Save options with the structure of $save_options_array
+	 * @param false|string $nonce_action   Action to verify when saving the post.
+	 * @param false|string $nonce_name     Nonce name to verify.
 	 */
 	public function __construct( $options = false, $nonce_action = false, $nonce_name = false, $save_args = false ) {
 
@@ -130,10 +130,6 @@ class Save_Post {
 				// Merge provide options with default ones
 				$option_args = array_merge( $this->save_options_defaults, $option_args );
 
-				if ( empty( $option_args['sanitize_callback'] ) ) {
-
-				} // End if
-
 				// Set the key in the save_options_array
 				$this->save_options_array[ $option_key ] = $option_args;
 
@@ -186,26 +182,124 @@ class Save_Post {
 	} // End set_save_args
 
 
+	/**
+	 * Sanitize the value using the given method.
+	 * @since 0.0.1
+	 *
+	 * @param variable $value              Value to sanitize.
+	 * @param string   $type               Type of sanitation to use.
+	 * @param variable $sanitize_callback  Custom function to sanitize value.
+	 */
+	public function sanitize_value( $value, $type = 'text', $sanitize_callback = false ) {
+
+		// Check if it has a sanitize callback that works
+		if ( ! empty( $sanitize_callback ) && is_callable( $sanitize_callback ) ) {
+
+			// Sanitize the value
+			$save_value = call_user_func( $sanitize_callback, $value );
+
+			return $save_value;
+
+		} else {
+
+			// Check the sanitize_type and use the appropriate method. Return error if not found.
+			switch ( $type ) {
+
+				case 'text':
+					return sanitize_text_field( $value );
+					break;
+
+				case 'html':
+					return wp_kses_post( $value );
+					break;
+
+				default:
+					$error = new \WP_Error(
+						'Invalid Sanitize Type',
+						'The type you are trying to sanitize does not exist',
+						array(
+							'type'  => $type,
+							'value' => $value,
+						)
+					);
+					return $error;
+			} // End switch
+		} // End if
+
+	} // End sanitize_value
+
+
+	/**
+	 * Method to save post data
+	 * @since 0.0.1
+	 *
+	 * @param int      $post_id  ID of the post being saved.
+	 * @param WP_Post  $post     WP_Post object of the post being saved.
+	 * @param bool     $update   Is this a post being updated or created.
+	 */
 	public function save_post( $post_id, $post, $update ) {
+
+		if ( $this->check_can_save( $post_id, $post, $update ) ) {
+
+			//OK, lets save something
+			$save_options = $this->save_options_array;
+
+			// Loop through all the save options
+			foreach ( $save_options as $key => $option_args ) {
+
+				// Check if the key has been sent
+				if ( isset( $_REQUEST[ $key ] ) ) {
+
+					$value = $_REQUEST[ $key ];
+
+					$save_value = $this->sanitize_value(
+						$value,
+						$option_args['sanitize_type'],
+						$option_args['sanitize_callback']
+					);
+
+					if ( ! is_wp_error( $save_value ) ) {
+
+						// Save
+						update_post_meta( $post_id, $key, $save_value );
+
+					} // End if
+				} // End if
+			} // End foreach
+		} // End if
+	} // End save_post
+
+
+	/**
+	 * Check if the data can or should be saved.
+	 * @since 0.0.1
+	 *
+	 * @param int      $post_id  ID of the post being saved.
+	 * @param WP_Post  $post     WP_Post object of the post being saved.
+	 * @param bool     $update   Is this a post being updated or created.
+	 *
+	 * @return bool True if save is OK.
+	 */
+	private function check_can_save( $post_id, $post, $update ) {
 
 		// Check if save on update
 		if ( $this->save_args['only_update'] && ! $update ) {
 
-			return $post_id;
+			return false;
 
 		} // End if
 
 		// Check if doing autosave
 		if ( ! $this->save_args['on_autosave'] && defined( 'DOING_AUTOSAVE' ) && DOING_AUTOSAVE ) {
 
-			return $post_id;
+			return false;
 
 		} // End if
 
 		// If this is a revision, abort
 		if ( wp_is_post_revision( $post_id ) ) {
 
-			return $post_id;
+			return false;
 
 		} // End if
 
@@ -215,41 +309,19 @@ class Save_Post {
 		// Verify the nonce before proceeding.
 		if ( ! isset( $_REQUEST[ $this->nonce_name ] ) || ! wp_verify_nonce( $_REQUEST[ $this->nonce_name ], $nonce_action ) ) {
 
-			return $post_id;
+			return false;
 
 		} // End if
 
 		// Check if the current user has permission to edit the post.
 		if ( ! current_user_can( 'edit_post', $post_id ) ) {
 
-			return $post_id;
+			return false;
 
 		} // End if
 
-		//OK, lets save something
-		$save_options = $this->save_options_array;
+		return true;
 
-		// Loop through all the save options
-		foreach ( $save_options as $key => $option_args ) {
-
-			// Check if the key has been sent
-			if ( isset( $_REQUEST[ $key ] ) ) {
-
-				// Check if it has a sanitize callback that works
-				if ( ! empty( $option_args['sanitize_callback'] ) && is_callable( $option_args['sanitize_callback'] ) ) {
-
-					// Get the value
-					$value = $_REQUEST[ $key ];
-
-					// Sanitize the value
-					$save_value = call_user_func( $option_args['sanitize_callback'], $value );
-
-					// Save
-					update_post_meta( $post_id, $key, $save_value );
-
-				} // End if
-			} // End if
-		} // End foreach
-	}
+	} // End check_can_save
 
 }
