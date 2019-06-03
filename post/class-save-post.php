@@ -239,7 +239,7 @@ class Save_Post {
 	 */
 	public function save_post( $post_id, $post, $update ) {
 
-		if ( $this->check_can_save( $post_id, $post, $update ) ) {
+		if ( true === $this->check_can_save( $post_id, $post, $update ) ) {
 
 			//OK, lets save something
 			$save_options = $this->save_options_array;
