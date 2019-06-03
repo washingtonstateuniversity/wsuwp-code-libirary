@@ -5,6 +5,7 @@
  * the save_post_{posttype} hook.
  *
  * @version: 0.0.1
+ * @package https://github.com/washingtonstateuniversity/wsuwp-code-library/blob/master/post/class-save-post.php
  */
 
 class Save_Post {
@@ -12,7 +13,7 @@ class Save_Post {
 
 	/**
 	 * Nonce action to use when validating.
-	 * @var null|string $nounce_action
+	 * @var null|string $nonce_action
 	 * @since 0.0.1
 	 */
 	protected $nonce_action;
@@ -20,7 +21,7 @@ class Save_Post {
 
 	/**
 	 * Nonce name to use when validating.
-	 * @var null|string $nounce_name
+	 * @var null|string $nonce_name
 	 * @since 0.0.1
 	 */
 	protected $nonce_name;
@@ -41,15 +42,16 @@ class Save_Post {
 	 * @since 0.0.1
 	 */
 	protected $save_options_defaults = array(
-		'sanitize_callback' => 'sanitize_text_field', // Callback to use to sanitize the value.
-		'save_default'      => false,                 // Save default value if input field is empty.
-		'default_value'     => '',                    // Default value to save if save_default is true.
+		'sanitize_type'     => 'text',  // Type of content to sanitize (optional)
+		'sanitize_callback' => false,  // Custom callback to use to sanitize the value (optional).
+		'save_default'      => false,  // Save default value if input field is empty (optional).
+		'default_value'     => '',     // Default value to save if save_default is true (optional).
 	);
 
 
 	/**
 	 * Nonce name to use when validating.
-	 * @var null|string $nounce_name
+	 * @var null|string $nonce_name
 	 * @since 0.0.1
 	 */
 	protected $save_args = array(
@@ -64,7 +66,7 @@ class Save_Post {
 	 * @since 0.0.1
 	 *
 	 * @param false | array  $options        Save options with the structure of $save_options_array
-	 * @param false | string $nounce_action  Action to verify when saving the post.
+	 * @param false | string $nonce_action  Action to verify when saving the post.
 	 * @param false | string $nonce_name     Nonce name to verify.
 	 */
 	public function __construct( $options = false, $nonce_action = false, $nonce_name = false, $save_args = false ) {
@@ -76,17 +78,17 @@ class Save_Post {
 
 		} // End if
 
-		// Check if nonce action is provided and call set_nounce_action method.
+		// Check if nonce action is provided and call set_nonce_action method.
 		if ( ! empty( $nonce_action ) ) {
 
-			$this->set_nounce_action( $nonce_action );
+			$this->set_nonce_action( $nonce_action );
 
 		} // End if
 
-		// Check if nonce name is provided and call set_nounce_name method.
+		// Check if nonce name is provided and call set_nonce_name method.
 		if ( ! empty( $nonce_name ) ) {
 
-			$this->set_nounce_name( $nonce_name );
+			$this->set_nonce_name( $nonce_name );
 
 		} // End if
 
@@ -126,7 +128,11 @@ class Save_Post {
 				$option_args = ( is_array( $option_array ) ) ? $option_array : array();
 
 				// Merge provide options with default ones
-				$option_args = array_merge( $this->$save_options_defaults, $option_args );
+				$option_args = array_merge( $this->save_options_defaults, $option_args );
+
+				if ( empty( $option_args['sanitize_callback'] ) ) {
+
+				} // End if
 
 				// Set the key in the save_options_array
 				$this->save_options_array[ $option_key ] = $option_args;
@@ -147,24 +153,24 @@ class Save_Post {
 	 *
 	 * @param string $nonce_action Nonce action to use to verify.
 	 */
-	public function set_nounce_action( string $nonce_action ) {
+	public function set_nonce_action( string $nonce_action ) {
 
 		$this->nonce_action = $nonce_action;
 
-	} // End set_nounce_action
+	} // End set_nonce_action
 
 
 	/**
-	 * Set the $nounce_name property value.
+	 * Set the $nonce_name property value.
 	 * @since 0.0.1
 	 *
-	 * @param string $nounce_name Nonce action to use to verify.
+	 * @param string $nonce_name Nonce action to use to verify.
 	 */
-	public function set_nounce_name( string $nonce_name ) {
+	public function set_nonce_name( string $nonce_name ) {
 
 		$this->nonce_name = $nonce_name;
 
-	} // End set_nounce_name
+	} // End set_nonce_name
 
 
 	/**
@@ -207,14 +213,14 @@ class Save_Post {
 		$nonce_action = ( ! empty( $this->save_args['nonce_include_id'] ) ) ? $this->nonce_action . '_' . $post_id : $this->nonce_action;
 
 		// Verify the nonce before proceeding.
-		if ( ! isset( $_REQUEST[ $this->$nonce_name ] ) || ! wp_verify_nonce( $_REQUEST[ $this->$nonce_name ], $nonce_action ) ) {
+		if ( ! isset( $_REQUEST[ $this->nonce_name ] ) || ! wp_verify_nonce( $_REQUEST[ $this->nonce_name ], $nonce_action ) ) {
 
 			return $post_id;
 
 		} // End if
 
 		// Check if the current user has permission to edit the post.
-		if ( ! current_user_can( $post_type->cap->edit_post, $post_id ) ) {
+		if ( ! current_user_can( 'edit_post', $post_id ) ) {
 
 			return $post_id;
 
@@ -236,7 +242,7 @@ class Save_Post {
 					$value = $_REQUEST[ $key ];
 
 					// Sanitize the value
-					$save_value = call_user_func_array( $option_args['sanitize_callback'], $value );
+					$save_value = call_user_func( $option_args['sanitize_callback'], $value );
 
 					// Save
 					update_post_meta( $post_id, $key, $save_value );
