@@ -55,7 +55,6 @@ class Save_Post {
 	 * @since 0.0.1
 	 */
 	protected $save_args = array(
-		'nonce_include_id'   => true, // Include the post ID in nonce action.
 		'only_update'        => true, // Only do save action on update post (not create post).
 		'on_autosave'        => false, // Save on autosave - probably not a good idea
 	);
@@ -303,11 +302,8 @@ class Save_Post {
 
 		} // End if
 
-		// Add the post_id to nonce action if set in $save_args
-		$nonce_action = ( ! empty( $this->save_args['nonce_include_id'] ) ) ? $this->nonce_action . '_' . $post_id : $this->nonce_action;
-
 		// Verify the nonce before proceeding.
-		if ( ! isset( $_REQUEST[ $this->nonce_name ] ) || ! wp_verify_nonce( $_REQUEST[ $this->nonce_name ], $nonce_action ) ) {
+		if ( ! isset( $_REQUEST[ $this->nonce_name ] ) || ! wp_verify_nonce( $_REQUEST[ $this->nonce_name ], $this->nonce_action ) ) {
 
 			return false;
 
