@@ -279,7 +279,7 @@ class Save_Post {
 	 *
 	 * @return bool True if save is OK.
 	 */
-	private function check_can_save( $post_id, $post, $update ) {
+	public function check_can_save( $post_id, $post, $update ) {
 
 		// Check if save on update
 		if ( $this->save_args['only_update'] && ! $update ) {
