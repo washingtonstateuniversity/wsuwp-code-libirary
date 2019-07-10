@@ -1,10 +1,9 @@
 <?php namespace WSUWP\Code_Library;
 
-
 class Metabox_Name {
 
 	private $nonce_name = 'wsuwp_nounce_name_changeme';
-	private $nonce_action = 'wsuwp_nounce_action_name_changeme';
+	private $nonce_action = 'wsuwp_nounce_action_changeme';
 	private $post_options;
 	private $object_changeme;
 
@@ -91,7 +90,7 @@ class Metabox_Name {
 
 			add_meta_box(
 				'metabox_id_changeme', // Unique ID
-				'metabox_id_changeme',  // Box title
+				'Metabox Title _changeme',  // Box title
 				array( $this, 'the_metabox' ),  // Content callback, must be of type callable
 				$screen // Post type
 			);
@@ -113,7 +112,7 @@ class Metabox_Name {
 		//include Utilities::get_plugin_component_path( 'metabox/something_changeme.php' );
 		//include Utilities::get_plugin_component_path( 'metabox/something_changeme.php' );
 
-	} // End the_social_share_metabox
+	} // End the_metabox
 
 
 }
