@@ -3,7 +3,7 @@
 /**
  * Use this class to define options set via post meta.
  *
- * @version: 0.0.1
+ * @version: 0.0.2
  * @package https://github.com/washingtonstateuniversity/wsuwp-code-library/blob/master/post/class-post-options.php
  */
 
@@ -114,6 +114,34 @@ class Post_Options {
 	public function get_post_options_array() {
 
 		return $this->post_options_array;
+
+	}
+
+
+	/**
+	 * Get an array of specific option keys
+	 * @since 0.0.2
+	 *
+	 * @param array $option_group Array of keys to get.
+	 *
+	 * @return array Post options array
+	 */
+	public function get_post_options_group( array $options_group ) {
+
+		$post_options = array();
+
+		foreach ( $option_group as $index => $key ) {
+
+			$option_array = $this->get_post_option( $key );
+
+			if ( ! empty( $option_array ) ) {
+
+				$post_options[ $key ] = $option_array;
+
+			} // End if
+		}
+
+		return $post_options;
 
 	}
 
